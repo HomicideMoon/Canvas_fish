@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Untitled Document</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        
+        html,
+        body {
+            height: 100%;
+        }
+        
+        #can {
+            width: 800px;
+            height: 600px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-image: url(bg.jpg);
+            background-position: cover;
+        }
+
+    </style>
+</head>
+
+<body>
+    <canvas id="can" width="800" height="600"></canvas>
+
+
+</body>
+
+</html>
+<script>
+    var can = document.getElementById("can");
+    var ctx = can.getContext('2d');
+    var arr = ['fish.png',
+        'cannon.png'
+    ];
+    var fishes = [];
+    var buls = [];
+    var cannon = {
+        x: -28.5,
+        y: -36,
+        angle: 0
+    }
+
+    function loadfiles(arr, fun) {
+        var len = arr.length;
+        var nums = 0;
+        var imgs = {};
+        for (var i = 0; i < len; i++) {
+            var img = new Image();
+            img.onload = function() {
+                nums++;
+                if (nums == len) {
+                    fun(imgs);
+                }
+            }
+            img.src = arr[i];
+            var name = arr[i].split(".")[0];
+            imgs[name] = img;
+        }
+    }
+
+    function Coordinate(y, x, ang0) {
+        var ang, r, result
+        if (x !== 0) {
+            var ang = Math.atan(y / x);
+
+        } else {
+            if (x > 0) {
+                ang = Math.PI / 2
+            } else {
+                ang = -Math.PI / 2
+            }
+        }
+
+        r = Math.pow((Math.pow(x, 2) + Math.pow(y, 2)), 1 / 2);
+        result = {
+            x: r * Math.cos(ang + ang0),
+            y: r * Math.sin(ang + ang0)
+        }
+
+        return result;
+    }
+
+    function Collision_Circles(x1, y1, r1, x2, y2, r2) {
+        if (Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2) < Math.pow((r1 + r2), 2)) {
+            return true
+        } else {
+            return false
+        }
+    }
+
+
+    loadfiles(arr, function(arr) {
+
+        setInterval(function() {
+            can.width = 800;
+            can.height = 600;
+            ctx.translate(400, 300);
+
+            for (var i = 0; i < fishes.length; i++) {
+                fishes[i].z++;
+                if (fishes[i].z == 16) {
+                    fishes[i].z = 0
+                }
+
+                fishes[i].x += fishes[i].v;
+                var realcood = Coordinate(fishes[i].y + 44, fishes[i].x + 75, fishes[i].angle * Math.PI / 180);
+                fishes[i].realx = realcood.x;
+                fishes[i].realy = realcood.y;
+
+                if (fishes[i].x > 674) {
+                    fishes.splice(i, 1)
+                } else {
+                    ctx.rotate(fishes[i].angle * Math.PI / 180);
+                    ctx.drawImage(arr.fish, 0, 0 + 126 * Math.floor(fishes[i].z / 2), 174, 126, fishes[i].x, fishes[i].y, 174, 126);
+                    ctx.rotate(-fishes[i].angle * Math.PI / 180);
+                }
+
+            }
+            ctx.translate(0, 265);
+
+
+            for (var i = buls.length - 1; i >= 0; i--) {
+                console.log(buls[0]);
+                buls[i].y += buls[i].v;
+                var realcoods_bul = Coordinate(buls[i].y, buls[i].x, buls[i].angle * Math.PI / 180);
+                buls[i].realx = realcoods_bul.x;
+                buls[i].realy = realcoods_bul.y + 265;
+                for (var j = fishes.length - 1; j >= 0; j--) {
+                    if (Collision_Circles(buls[i].realx, buls[i].realy, buls[i].r, fishes[j].realx, fishes[j].realy, fishes[j].r)) {
+                        console.log("hit");
+                        fishes.splice(j, 1);
+                        buls.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+            for (var i = buls.length - 1; i = 0; i--) {
+                if (Math.abs(buls[i].realx) > 410 || buls[i].realy < -310) {
+                    buls.splice(i, 1);
+                }
+            }
+
+
+
+
+            for (var i = 0; i < buls.length; i++) {
+
+                ctx.rotate(buls[i].angle * Math.PI / 180);
+                ctx.fillStyle = "yellow";
+                ctx.beginPath();
+                ctx.arc(buls[i].x, buls[i].y, buls[i].r, 0, Math.PI * 2, true);
+                ctx.closePath();
+                ctx.fill();
+                ctx.rotate(-buls[i].angle * Math.PI / 180);
+
+            }
+
+            ctx.rotate(cannon.angle * Math.PI / 180);
+            ctx.drawImage(arr.cannon, cannon.x, cannon.y, 57, 71);
+            ctx.rotate(cannon.angle * Math.PI / 180);
+            ctx.translate(0, -265);
+
+
+
+
+        }, 1000 / 60);
+
+    })
+
+    setInterval(function() {
+        var newfish = {
+            x: -674,
+            y: Math.random() * (600 - 126) - 300,
+            z: Math.floor(Math.random() * 8) * 2,
+            v: Math.random() * 5 + 2,
+            angle: Math.random() * 360,
+            r: 44
+
+        };
+
+        //        var realcood = Coordinate(newfish.y + 44, newfish.x + 75, newfish.angle * Math.PI / 180); // // newfish.realx = realcood.x; // newfish.realy = realcood.y;
+        fishes.push(newfish);
+
+    }, 2000)
+
+    window.onkeydown = function(e) {
+        var key = e.keyCode;
+        switch (key) {
+            case 39:
+                if (cannon.angle < 90) {
+                    cannon.angle += 3;
+                }
+                break;
+            case 37:
+                if (cannon.angle > -90) {
+                    cannon.angle -= 3;
+                }
+
+                break;
+            case 32:
+                var newbul = {
+                    x: 0,
+                    y: -10,
+                    v: -10,
+                    r: 10,
+                    angle: cannon.angle
+                }
+                var realcoods_bul = Coordinate(newbul.y, newbul.x, newbul.angle * Math.PI / 180);
+                newbul.realx = realcoods_bul.x;
+                newbul.realy = realcoods_bul.y + 265;
+                buls.push(newbul);
+
+        }
+    }
+
+</script>
